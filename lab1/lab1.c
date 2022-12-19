@@ -9,7 +9,7 @@
 FLOAT_TYPE
 compute_sin_on_cpu() 
 {
-    const unsigned int N = pow(10, 6);
+    const unsigned int N = pow(10, 7);
 
     FLOAT_TYPE* sin_array = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE) * N);
     FLOAT_TYPE sin_sum = (FLOAT_TYPE)0.0;

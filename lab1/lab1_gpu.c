@@ -9,11 +9,11 @@
 FLOAT_TYPE
 compute_sin_on_cpu() 
 {
-    const unsigned int N = pow(10, 6);
-    FLOAT_TYPE sin_array[N];
+    const unsigned int N = pow(10, 7);
+    FLOAT_TYPE* sin_array = (FLOAT_TYPE *)malloc(sizeof(FLOAT_TYPE) * N);
     FLOAT_TYPE sin_sum = (FLOAT_TYPE)0.0;
 
-    #pragma acc data create(sin_array) copy(sin_sum)
+    #pragma acc data create(sin_array[0:N]) copy(sin_sum)
     {
     #pragma acc kernels 
         for(int i = 0; i < N; i++)
@@ -29,6 +29,7 @@ compute_sin_on_cpu()
 
     }
 
+    free(sin_array);
     return sin_sum;
 }
 

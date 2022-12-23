@@ -155,14 +155,13 @@ int main(int argc, const char* argv[])
     double* grid = (double*)malloc(sizeof(double) * gridSize * gridSize);
     FillingGrid(grid, gridSize);
 
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
     RESULT result = HeatEquation(grid, gridSize, numIterations, errorRate);
 
-    gettimeofday(&end, NULL);
-
-    float timee = (((end.tv_sec + end.tv_usec/1000000) - (start.tv_sec + start.tv_usec/1000000)));
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    int64_t timee = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
     printf("iter = %d \t error = %f \t time = %f \n", result.iter, result.error , timee);
 
 	return 0;

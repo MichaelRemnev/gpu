@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
-#include <sys/time.h>
+#include <time.h>
 
 typedef struct {
 	double error;
@@ -86,19 +86,34 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 
 		for (iter = 0; iter < numIterations && error > errorRate; iter++)
 		{
-			error = 0.0;
-            #pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
+            		#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
 			{
-                #pragma acc kernels loop independent collapse(2) reduction(max:error)
-				for (int i = 1; i < gridSize - 1; i++)
+				if (iter % 50 == 0 || iter == numIterations-1)
 				{
-					for (int j = 1; j < gridSize - 1; j++)
+					error = 0.0;
+                			#pragma acc kernels loop independent collapse(2) reduction(max:error)
+					for (int i = 1; i < gridSize - 1; i++)
 					{
-						int index = i * gridSize + j;
-						secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
-						error = fmax(error, fabs(secondGrid[index] - firstGrid[index]));
+						for (int j = 1; j < gridSize - 1; j++)
+						{
+							int index = i * gridSize + j;
+							secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
+							error = fmax(error, fabs(secondGrid[index] - firstGrid[index]));
+						}
 					}
 				}
+				else
+                		{
+                    		#pragma acc kernels loop independent collapse(2)
+					for (int i = 1; i < gridSize - 1; i++)
+				    	{
+						for (int j = 1; j < gridSize - 1; j++)
+						{
+						    int index = i * gridSize + j;
+						    secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
+					    	}
+				    	}
+                		}
 			}
 
 			double* temporaryGrid = firstGrid;

@@ -162,7 +162,7 @@ int main(int argc, const char* argv[])
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     int64_t timee = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-    printf("iter = %d \t error = %f \t time = %f \n", result.iter, result.error , timee);
+    printf("iter = %d \t error = %f \t time = %d \n", result.iter, result.error , timee);
 
 	return 0;
 }

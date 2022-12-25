@@ -9,13 +9,13 @@ typedef struct {
 	int iter;
 } RESULT;
 
-bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, int* numIterations)
+bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, int* numIterations, int* errorInterval)
 {
     static const double checkMaxErrorRate = 0.000001;  // 10^-6
     static const int checkGridSize[] = { 128, 256, 512 };
     static const int checkMaxNumIter = 1000000;  // 10^6
 
-	if (argc < 3) 
+	if (argc < 5) 
 	{
         printf("ERROR\n");
 		printf("a.out 'error rate' 'grid size' 'number of iterations'\n");
@@ -23,7 +23,8 @@ bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, 
 	}
 
     *errorRate = strtod(argv[1], NULL);
-    if (*errorRate < checkMaxErrorRate) {
+    if (*errorRate < checkMaxErrorRate) 
+    {
         printf("Max error rate is %f.\n", checkMaxErrorRate);
         return false;
     }
@@ -35,10 +36,17 @@ bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, 
     }
 
     *numIterations = atoi(argv[3]);
-    if (*numIterations > checkMaxNumIter) {
+    if (*numIterations > checkMaxNumIter) 
+    {
         printf("Max number of iterations is %d.\n", checkMaxNumIter);
         return false;
     }
+
+	*errorInterval = atoi(argv[4]);
+	if (*errorInterval <= 0)
+	{
+		printf("error interval = 1\n");
+	}
 
 	return true;
 }
@@ -63,7 +71,7 @@ void FillingGrid(double* grid, int gridSize)
     }
 }
 
-RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorRate)
+RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorRate, int errorInterval)
 {
 	int doubleGridSize = gridSize * gridSize;
 	double* firstGrid = (double*)malloc(sizeof(double) * doubleGridSize);
@@ -88,7 +96,7 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 		{
             		#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
 			{
-				if (iter % 50 == 0 || iter == numIterations-1)
+				if (iter % errorInterval == 0 || iter == numIterations-1)
 				{
 					error = 0.0;
                 			#pragma acc kernels loop independent collapse(2) reduction(max:error)
@@ -145,9 +153,9 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 int main(int argc, const char* argv[])
 {
     double errorRate;
-    int gridSize, numIterations;
+    int gridSize, numIterations, errorInterval;
     
-    if (!CheckInput(argc, argv, &errorRate, &gridSize, &numIterations))
+    if (!CheckInput(argc, argv, &errorRate, &gridSize, &numIterations, &errorInterval))
     {
         return 1;
     }
@@ -158,7 +166,7 @@ int main(int argc, const char* argv[])
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-    RESULT result = HeatEquation(grid, gridSize, numIterations, errorRate);
+    RESULT result = HeatEquation(grid, gridSize, numIterations, errorRate, errorInterval);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     int64_t timee = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;

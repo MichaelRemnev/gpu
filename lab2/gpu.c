@@ -132,7 +132,7 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 			else
                 	{
 				#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
-				#pragma acc kernels
+				#pragma acc kernels async
 				{
                     			#pragma acc loop independent collapse(2)
 					for (int i = 1; i < gridSize - 1; i++)

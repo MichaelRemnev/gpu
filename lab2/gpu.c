@@ -45,6 +45,7 @@ bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, 
 	*errorInterval = atoi(argv[4]);
 	if (*errorInterval <= 0)
 	{
+		*errorInterval = 1;
 		printf("error interval = 1\n");
 	}
 
@@ -78,6 +79,11 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 	double* secondGrid = (double*)malloc(sizeof(double) * doubleGridSize);
 	double error = 1.0;
 	int iter = 0;
+	
+	if (errorInterval % 2 == 1) 
+	{
+		errorInterval++;
+	}
 
     #pragma acc data copy(grid [0:doubleGridSize]) create(firstGrid [0:doubleGridSize]) create(secondGrid [0:doubleGridSize])
 	{
@@ -94,39 +100,61 @@ RESULT HeatEquation(double* grid, int gridSize, int numIterations, double errorR
 
 		for (iter = 0; iter < numIterations && error > errorRate; iter++)
 		{
-            		#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
+
+			if (iter % errorInterval == 0 || iter == numIterations-1)
 			{
-				if (iter % errorInterval == 0 || iter == numIterations-1)
+				error = 0.0;
+                		#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize]) copy(error)
+				#pragma acc kernels
 				{
-					error = 0.0;
-                			#pragma acc kernels loop independent collapse(2) reduction(max:error)
+					#pragma acc loop independent collapse(2)
 					for (int i = 1; i < gridSize - 1; i++)
 					{
 						for (int j = 1; j < gridSize - 1; j++)
 						{
 							int index = i * gridSize + j;
 							secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
+						}
+					}
+					
+					#pragma acc loop independent collapse(2) reduction(max:error)
+					for (int i = 1; i < gridSize - 1; i++)
+					{
+						for (int j = 1; j < gridSize - 1; j++)
+						{
+							int index = i * gridSize + j;
+							firstGrid[index] = 0.25 * (secondGrid[index - gridSize] + secondGrid[index + gridSize] + secondGrid[index - 1] + secondGrid[index + 1]);
 							error = fmax(error, fabs(secondGrid[index] - firstGrid[index]));
 						}
 					}
 				}
-				else
-                		{
-                    		#pragma acc kernels loop independent collapse(2)
+			}
+			else
+                	{
+				#pragma acc data present(secondGrid [0:doubleGridSize], firstGrid [0:doubleGridSize])
+				#pragma acc kernels
+				{
+                    			#pragma acc loop independent collapse(2)
 					for (int i = 1; i < gridSize - 1; i++)
-				    	{
+			    		{
 						for (int j = 1; j < gridSize - 1; j++)
 						{
-						    int index = i * gridSize + j;
-						    secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
-					    	}
+					    	int index = i * gridSize + j;
+					    	secondGrid[index] = 0.25 * (firstGrid[index - gridSize] + firstGrid[index + gridSize] + firstGrid[index - 1] + firstGrid[index + 1]);
+				    		}
+			   		}
+					
+					#pragma acc loop independent collapse(2)
+						for (int i = 1; i < gridSize - 1; i++)
+				    	{
+							for (int j = 1; j < gridSize - 1; j++)
+							{
+							    int index = i * gridSize + j;
+							    firstGrid[index] = 0.25 * (secondGrid[index - gridSize] + secondGrid[index + gridSize] + secondGrid[index - 1] + secondGrid[index + 1]);
+						    }
 				    	}
-                		}
-			}
-
-			double* temporaryGrid = firstGrid;
-			firstGrid = secondGrid;
-			secondGrid = temporaryGrid;
+				}
+                	}
 		}
 
         #pragma acc kernels loop independent collapse(2)

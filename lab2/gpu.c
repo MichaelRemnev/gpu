@@ -12,7 +12,7 @@ typedef struct {
 bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, int* numIterations, int* errorInterval)
 {
     static const double checkMaxErrorRate = 0.000001;  // 10^-6
-    static const int checkGridSize[] = { 128, 256, 512 };
+    static const int checkGridSize[] = { 128, 256, 512, 1024 };
     static const int checkMaxNumIter = 1000000;  // 10^6
 
 	if (argc < 5) 
@@ -30,8 +30,8 @@ bool CheckInput(int argc, const char* argv[], double* errorRate, int* gridSize, 
     }
 
     *gridSize = atoi(argv[2]);
-    if (*gridSize != checkGridSize[0] && *gridSize != checkGridSize[1] && *gridSize != checkGridSize[2]) {
-        printf("Possible grid sizes are only %d^2, %d^2, %d^2.\n", checkGridSize[0], checkGridSize[1], checkGridSize[2]);
+    if (*gridSize != checkGridSize[0] && *gridSize != checkGridSize[1] && *gridSize != checkGridSize[2] && *gridSize != checkGridSize[3]) {
+        printf("Possible grid sizes are only %d^2, %d^2, %d^2.\n", checkGridSize[0], checkGridSize[1], checkGridSize[2], checkGridSize[3]);
         return false;
     }
 
